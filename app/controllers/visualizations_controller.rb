@@ -292,8 +292,6 @@ class VisualizationsController < ApplicationController
       field_count[field.field_type] += 1
     end
 
-    rel_vis = []
-
     # Determine which visualizations are relevant
     rel_vis = get_rel_vis(field_count, format_data, has_pics)
 
