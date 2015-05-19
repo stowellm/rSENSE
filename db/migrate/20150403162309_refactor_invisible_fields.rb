@@ -30,7 +30,7 @@ class RefactorInvisibleFields < ActiveRecord::Migration
 
   # Run the migration down (rake db:rollback)
   def down
-    #refactor(-1)
+    # refactor(-1)
   end
 
   def refactor(dir)
