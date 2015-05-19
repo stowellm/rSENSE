@@ -39,12 +39,12 @@ class MediaObjectsControllerTest < ActionController::TestCase
   end
 
   test 'should upload media to visualization' do
-    viz_id = visualizations(:media_test).id
+    vis_id = visualizations(:media_test).id
 
     assert_difference('MediaObject.count') do
       img_path = Rails.root.join('test', 'CSVs', 'nerdboy.jpg')
       file = Rack::Test::UploadedFile.new(img_path, 'image/jpeg')
-      post :saveMedia, { keys: "visualization/#{viz_id}", upload: file }, user_id: @nixon
+      post :saveMedia, { keys: "visualization/#{vis_id}", upload: file }, user_id: @nixon
     end
 
     get :show, format: 'json', id: MediaObject.last.id, recur: true
@@ -91,10 +91,12 @@ class MediaObjectsControllerTest < ActionController::TestCase
   end
 
   test 'should destroy media_object' do
+    request.env['HTTP_REFERER'] = request.path
+
     assert_difference('MediaObject.count', -1) do
       delete :destroy, { id: @media_object },  user_id: @nixon
+      assert_redirected_to request.env['HTTP_REFERER']
     end
-    assert_redirected_to @media_object.project
   end
 
   test 'shouldnt destroy media_object' do

@@ -27,9 +27,8 @@
   *
 ###
 $ ->
-  if namespace.controller is "visualizations" and
-  namespace.action in ["displayVis", "embedVis", "show"]
-
+  if namespace.controller is 'visualizations' and
+  namespace.action in ['displayVis', 'embedVis', 'show']
     window.globals ?= {}
 
     ###
@@ -46,8 +45,8 @@ $ ->
                 </div>
               </div>
               """
-      ($ '#viscontainer').append modal
-      ($ "#loadModal").modal
+      $('#vis-container').append modal
+      $("#loadModal").modal
         backdrop: 'static'
         keyboard: 'false'
 
@@ -58,80 +57,50 @@ $ ->
 
       savedData = globals.serializeVis()
 
-      req = $.ajax
+      $.ajax
         type: 'POST'
         url: '/visualizations'
         dataType: 'json'
         data:
           visualization:
-            project_id: Number data.projectID
+            project_id: Number(data.projectID)
             title: name
             data: savedData.data
             globals: savedData.globals
             svg: svg
         success: (msg) ->
-          ($ "#loadModal").modal('hide')
+          $("#loadModal").modal('hide')
           window.location = msg.url
         error: (jqxhr, status, msg) ->
-          response = $.parseJSON msg['responseText']
-          error_message = response.errors.join "</p><p>"
-
-          ($ '.container.mainContent').find('p').before """
-          <div class="alert alert-danger fade in">
-            <button type="button" class="close" data-dismiss="alert"
-              aria-hidden="true">×</button>
-            <h4>Error Saving Visualization:</h4>
-            <p>#{error_message}</p>
-            <p>
-              <button type="button" class="btn btn-danger error_bind"
-                data-retry-text"Retrying...">Retry</button>
-              <button type="button" class="btn btn-default error_dismiss">
-                Or Dismiss</button>
-            </p>
-          </div>"""
-
-          # Dismiss
-          ($ '.error_dismiss').click ->
-            ($ '.alert').alert 'close'
-
-          # Retry
-          ($ '.error_bind').click ->
-            createVis(name)
+          quickFlash('Failed to save visualization', 'error')
 
     ###
     Creates a new vis upon name submission
     ###
-    globals.saveVis = (title, desc, succCallback, failCallback) ->
+    globals.saveVis = ->
       name = 'Saved Vis - ' + data.projectName
-      helpers.name_popup(name, 'visualization', '#viscontainer',
+      helpers.name_popup(name, 'visualization', '#vis-container',
         createVis, null)
 
     ###
     Ajax call to check if the user is logged in. Calls the appropriate
     given callback when completed.
     ###
-    globals.verifyUser = (succCallback, failCallback, checkOwner) ->
-
-      req = $.ajax
+    globals.userPermissions = ->
+      $.ajax
         type: 'GET'
-        url: "/sessions/verify"
-        dataType: 'json'
+        url: "/sessions/permissions"
+        dataType: 'script'
         data:
           project_id: data.projectID
-          verify_owner: checkOwner
-        success: (msg, status, details) ->
-          succCallback()
-        error: (msg, status, details) ->
-          failCallback()
 
     ###
-    Serializes all vis data. Strips functions from the objects bfire serializing
-    since they cannot be serialized.
+    Serializes all vis data. Strips functions from the objects before
+    serializing since they cannot be serialized.
     ###
     globals.serializeVis = (includeData = true) ->
-
       # Set current vis to default
-      current = (globals.curVis.canvas.match /([A-z]*)_canvas/)[1]
+      current = (globals.curVis.canvas.match /([A-z]*)-canvas/)[1]
       current = current[0].toUpperCase() + current.slice 1
       data.defaultVis = current
 
@@ -141,10 +110,13 @@ $ ->
         globals.configs.fieldSelection = [globals.curVis.configs.displayField]
 
       # Check for and note LT dates
+      dataBackup = data.dataPoints.slice(0)
       if data.timeType is data.NORM_TIME
         for dp, dIndex in data.dataPoints
           for fieldIndex in data.timeFields
-            data.dataPoints[dIndex][fieldIndex] = "U #{dp[fieldIndex]}"
+            tmpRow = data.dataPoints[dIndex].slice(0)
+            tmpRow[fieldIndex] = "U #{dp[fieldIndex]}"
+            data.dataPoints[dIndex] = tmpRow
 
       savedConfig = {}
 
@@ -162,21 +134,22 @@ $ ->
       dataCpy = {}
       if includeData then $.extend(dataCpy, data)
 
+      # Restore dataPoints (to before time update)
+      data.dataPoints = dataBackup
+
       ret =
-        globals: (JSON.stringify savedConfig)
-        data: (JSON.stringify dataCpy)
+        globals: JSON.stringify(savedConfig)
+        data:    JSON.stringify(dataCpy)
 
     ###
     Ajax call to update the project's default vis with the current settings.
     ###
     globals.defaultVis = ->
-
       savedData = globals.serializeVis(false)
-
-      req = $.ajax
+      $.ajax
         type: 'PUT'
         url: '/projects/' + data.projectID
-        dataType: 'json'
+        dataType: 'JSON'
         data:
           project:
             globals: savedData.globals

@@ -45,9 +45,15 @@ class VisualizationsController < ApplicationController
   def show
     @visualization = Visualization.find(params[:id])
     @project = Project.find_by_id(@visualization.project_id)
+    tmp = JSON.parse(@visualization.data)
 
     # The finalized data object
-    @data = { savedData: @visualization.data, savedGlobals: @visualization.globals }
+    @data = {
+      savedData:    @visualization.data,
+      savedGlobals: @visualization.globals,
+      defaultVis:   tmp['defaultVis'],
+      relVis:       tmp['relVis']
+    }
 
     recur = params.key?(:recur) ? params[:recur] == 'true' : false
 
@@ -182,9 +188,7 @@ class VisualizationsController < ApplicationController
         m.destroy
       end
 
-      @visualization.hidden = true
-      @visualization.user_id = -1
-      @visualization.save
+      @visualization.destroy
 
       respond_to do |format|
         format.html { redirect_to visualizations_url }
@@ -209,7 +213,7 @@ class VisualizationsController < ApplicationController
     field_count = []
 
     # build list of datasets
-    if  !params[:datasets].nil?
+    if !params[:datasets].nil?
       dsets = params[:datasets].split(',')
       dsets.each do |id|
         begin
@@ -218,7 +222,7 @@ class VisualizationsController < ApplicationController
             @datasets.push dset
           end
         rescue
-          logger.info 'Either project id or dataset does not exist in the DB'
+          logger.info 'Either project id or data set does not exist in the DB'
         end
       end
     else
@@ -226,15 +230,22 @@ class VisualizationsController < ApplicationController
     end
 
     # create special row identifier field for all datasets
-    data_fields.push(typeID: NUMBER_TYPE, unitName: 'id', fieldID: -1, fieldName: 'Data Point')
+    data_fields.push(typeID: NUMBER_TYPE, unitName: 'id',
+                     fieldID: -1, fieldName: 'Data Point')
     # create special dataset grouping field
-    data_fields.push(typeID: TEXT_TYPE, unitName: 'String', fieldID: -1, fieldName: 'Dataset Name (id)')
+    data_fields.push(typeID: TEXT_TYPE, unitName: 'String',
+                     fieldID: -1, fieldName: 'Data Set Name (id)')
     # create special grouping field for all datasets
-    data_fields.push(typeID: TEXT_TYPE, unitName: 'String', fieldID: -1, fieldName: 'Combined Datasets')
+    data_fields.push(typeID: TEXT_TYPE, unitName: 'String',
+                     fieldID: -1, fieldName: 'Combined Data Sets')
+    # create special contributor grouping field
+    data_fields.push(typeID: TEXT_TYPE, unitName: 'String',
+                     fieldID: -1, fieldName: 'Contributors')
 
     # push real fields to temp variable
     @project.fields.each do |field|
-      data_fields.push(typeID: field.field_type, unitName: field.unit, fieldID: field.id, fieldName: field.name)
+      data_fields.push(typeID: field.field_type, unitName: field.unit,
+                       fieldID: field.id, fieldName: field.name)
     end
 
     has_pics = false
@@ -243,7 +254,9 @@ class VisualizationsController < ApplicationController
     @datasets.each do |dataset|
       photos = dataset.media_objects.to_a.keep_if { |mo| mo.media_type == 'image' }.map { |mo| mo.to_hash(true) }
       has_pics = true if photos.size > 0
-      metadata[i] = { name: dataset.title, user_id: dataset.user_id, dataset_id: dataset.id, timecreated: dataset.created_at, timemodified: dataset.updated_at, photos: photos }
+      metadata[i] = { name: dataset.title, user_id: dataset.user_id,
+        dataset_id: dataset.id, timecreated: dataset.created_at,
+        timemodified: dataset.updated_at, photos: photos }
 
       dataset.data.each_with_index do |row, index|
         unless row.class == Hash
@@ -255,6 +268,13 @@ class VisualizationsController < ApplicationController
         arr.push index + 1
         arr.push "#{dataset.title}(#{dataset.id})"
         arr.push 'All'
+
+        # push unique contributors
+        if dataset.key.nil?
+          arr.push "User: #{User.select(:name).find(dataset.user_id).name}"
+        else
+          arr.push "Key: #{dataset.key}"
+        end
 
         data_fields.slice(arr.length, data_fields.length).each do |field|
           arr.push row[field[:fieldID].to_s]
@@ -272,36 +292,12 @@ class VisualizationsController < ApplicationController
       field_count[field.field_type] += 1
     end
 
-    rel_vis = []
-
     # Determine which visualizations are relevant
-    if field_count[LONGITUDE_TYPE] > 0 and field_count[LATITUDE_TYPE] > 0
-      rel_vis.push 'Map'
-    end
-
-    if field_count[TIME_TYPE] > 0 and field_count[NUMBER_TYPE] > 0 and format_data.count > 1
-      rel_vis.push 'Timeline'
-    end
-
-    if field_count[NUMBER_TYPE] > 0 and format_data.count > 1
-      rel_vis.push 'Scatter'
-      rel_vis.push 'Pie'
-    end
-
-    if format_data.count > 0
-      rel_vis.push 'Bar'
-      rel_vis.push 'Histogram'
-    end
-
-    rel_vis.push 'Table'
-    rel_vis.push 'Summary'
-
-    if has_pics
-      rel_vis.push 'Photos'
-    end
+    rel_vis = get_rel_vis(field_count, format_data, has_pics)
 
     # A list of all current visualizations
-    all_vis =  ['Map', 'Timeline', 'Scatter', 'Bar', 'Histogram', 'Pie', 'Table', 'Summary', 'Photos']
+    all_vis = ['Map', 'Timeline', 'Scatter', 'Bar', 'Histogram',
+               'Pie', 'Table', 'Summary', 'Photos']
 
     # Defaut vis if one exists for the project
     default_vis = @project.default_vis.nil? ? 'none' : @project.default_vis
@@ -332,7 +328,7 @@ class VisualizationsController < ApplicationController
           options[:isEmbed] = 1
           options[:startCollapsed] = 1
           @globals = { options: options }
-          render 'embed', layout: 'embedded'
+          render 'embedProjVis', layout: 'embedded'
         else
           @layout_wide = true
           render
@@ -345,15 +341,49 @@ class VisualizationsController < ApplicationController
 
   def visualization_params
     if @cur_user.try(:admin)
-      params[:visualization].permit(:content, :data, :project_id, :globals, :title, :user_id, :featured,
-                                    :featured_at, :tn_src, :tn_file_key, :summary, :thumb_id, :featured_media_id)
+      params[:visualization].permit(:content, :data, :project_id, :globals,
+                                    :title, :user_id, :featured,
+                                    :featured_at, :tn_src, :tn_file_key,
+                                    :summary, :thumb_id, :featured_media_id)
     else
-      params[:visualization].permit(:content, :data, :project_id, :globals, :title, :user_id,
-                                    :tn_src, :tn_file_key, :summary, :thumb_id, :featured_media_id)
+      params[:visualization].permit(:content, :data, :project_id, :globals,
+                                    :title, :user_id, :tn_src, :tn_file_key,
+                                    :summary, :thumb_id, :featured_media_id)
     end
   end
 
   def allow_iframe
     response.headers.except! 'X-Frame-Options'
+  end
+
+  def get_rel_vis(field_count, format_data, has_pics)
+    rel_vis = []
+
+    if field_count[LONGITUDE_TYPE] > 0 and field_count[LATITUDE_TYPE] > 0
+      rel_vis.push 'Map'
+    end
+
+    if field_count[TIME_TYPE] > 0 and field_count[NUMBER_TYPE] > 0 and format_data.count > 1
+      rel_vis.push 'Timeline'
+    end
+
+    if field_count[NUMBER_TYPE] > 0 and format_data.count > 1
+      rel_vis.push 'Scatter'
+      rel_vis.push 'Pie'
+    end
+
+    if format_data.count > 0
+      rel_vis.push 'Bar'
+      rel_vis.push 'Histogram'
+    end
+
+    rel_vis.push 'Table'
+    rel_vis.push 'Summary'
+
+    if has_pics
+      rel_vis.push 'Photos'
+    end
+
+    rel_vis
   end
 end

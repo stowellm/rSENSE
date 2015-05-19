@@ -4,10 +4,9 @@ module ApplicationHelper
   end
 
   def title_and_edit_menu(obj)
-    if can_edit?(obj)
-      name = obj.class.to_s.split('_').map(&:capitalize).join(' ')
-      render 'shared/title_and_menu', obj: obj, typeName: name
-    end
+    name = obj.class.to_s.split('_').map(&:capitalize).join(' ')
+    render('shared/title_and_menu', obj: obj, typeName: name,
+           edit: can_edit?(obj))
   end
 
   def get_field_name(field)
@@ -143,6 +142,10 @@ module ApplicationHelper
         # viewing a saved vis
         Visualization.find(params[:id]).name.capitalize.html_safe
       end
+    elsif @namespace[:controller] == 'data_sets' and @namespace[:action] == 'manualEntry'
+      'Manual Entry'
+    elsif @namespace[:controller] == 'data_sets' and @namespace[:action] == 'edit'
+      'Editing a Data Set'
     else
       @namespace[:controller].capitalize.html_safe
     end

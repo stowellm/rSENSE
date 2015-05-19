@@ -23,33 +23,32 @@ class UpdateFieldsTest < ActionDispatch::IntegrationTest
     find('#manual_fields').click
 
     click_on 'Add Number'
-    assert page.has_content?('field added'), 'Flash happened'
     assert page.has_content?('Number'), 'Number field is there'
     click_on 'Add Number'
-    assert page.has_content?('field added'), 'Flash happened'
     page.assert_selector('tr', count: 3)
     first(:css, '.field_delete').click
     find('.field_delete').click
 
     click_on 'Add Text'
-    assert page.has_content?('field added'), 'Flash happened'
+    assert page.has_content?('Text'), 'Text field is there'
     find('.field_delete').click
 
     click_on 'Add Timestamp'
-    assert page.has_content?('field added'), 'Flash happened'
+    assert page.has_content?('Timestamp'), 'Timestamp is there'
     find('.field_delete').click
 
     click_on 'Add Location'
-    assert page.has_content?('field added'), 'Flash happened'
+    assert page.has_content?('Latitude'), 'Latitude is there'
+    assert page.has_content?('Longitude'), 'Longitude is there'
     first(:css, '.field_delete').click
 
     find('#fields_form_submit').click
 
-    assert page.has_content?('Changes to fields saved.')
+    assert page.has_content?('Fields were successfully updated.')
 
   end
 
-  test 'template fields with dataset' do
+  test 'template fields with data set' do
     login('kcarcia@cs.uml.edu', '12345')
     click_on 'Projects'
     find('#project_title').set('Template Fields Test')
@@ -71,7 +70,7 @@ class UpdateFieldsTest < ActionDispatch::IntegrationTest
     assert page.has_content?('dessert')
   end
 
-  test 'teplate fields without dataset' do
+  test 'teplate fields without data set' do
     login('kcarcia@cs.uml.edu', '12345')
     click_on 'Projects'
     find('#project_title').set('Template Fields Test 2')

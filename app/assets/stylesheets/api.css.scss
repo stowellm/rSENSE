@@ -1,47 +1,51 @@
 body[data-page-name="home/api_v1"] {
-  .POST
-  {
+  .POST {
     background-color: green;
     color: white;
     width: 5em;
-    cursor: pointer;
     text-align: center;
   }
 
-  .GET
-  {
+  .GET {
     background-color: blue;
     color: white;
     width: 5em;
-    cursor: pointer;
     text-align: center;
   }
 
-  .method
-  {
+  .method {
     text-align: center;
     width: 10em;
   }
 
-  .args
-  {
+  .args {
     width: 30em;
   }
 
-  .code
-  {
+  .code {
     font-family:"Courier New", Courier, monospace;
   }
 
-  .api
-  {
-    .def
-    {
+  .api {
+    .def {
     }
 
-    .more
-    {
+    .more {
       display: none;
     }
+  }
+
+  .titleGet:hover {
+      cursor: pointer;
+      outline: blue solid thin;
+  }
+  .titlePost:hover {
+      cursor: pointer;
+      outline: green solid thin;
+  }
+
+  .col-md-12 {
+    overflow: auto;
+    padding: 1px;
   }
 }

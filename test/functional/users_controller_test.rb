@@ -81,7 +81,7 @@ class UsersControllerTest < ActionController::TestCase
     get :show, { format: 'json', id: @user, recur: 'true' },  user_id: @user
     body = JSON.parse(response.body)
     assert body.key?('visualizations'), 'Recur should show visualizations'
-    assert body.key?('dataSets'), 'Recur should show dataSets'
+    assert body.key?('dataSets'), 'Recur should show data sets'
     assert body.key?('mediaObjects'), 'Recur should show mediaObjects'
     assert body.key?('projects'), 'Recur should show projects'
     assert_response :success
@@ -121,7 +121,7 @@ class UsersControllerTest < ActionController::TestCase
     assert_not_nil flash[:error]
   end
 
-  test "user can't delete themselves" do
+  test 'user cannot delete themselves' do
     assert_difference('User.count', 0) do
       delete :destroy, { id: @user },  user_id: @user
     end
@@ -130,13 +130,10 @@ class UsersControllerTest < ActionController::TestCase
     assert_response :redirect
   end
 
-  test 'should delete user' do
-    assert_difference('User.count', 0) do
+  test 'should destroy user' do
+    assert_difference('User.count', -1) do
       delete :destroy, { id: @user },  user_id: @admin
     end
-
-    @u0 = User.find_by_id(@user)
-    assert_match(/\@deleted\.org$/, @u0.email)
 
     assert_redirected_to users_path
   end

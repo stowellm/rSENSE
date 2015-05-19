@@ -31,7 +31,7 @@ class TutorialsController < ApplicationController
 
     @new_tutorial = Tutorial.new
 
-    @tutorials = Tutorial.search(params[:search]).paginate(page: params[:page],
+    @tutorials = Tutorial.search(params[:search], @cur_user.try(:admin)).paginate(page: params[:page],
                                                            per_page: pagesize)
 
     @tutorials = @tutorials.order("#{sort} #{order}")
@@ -127,9 +127,7 @@ class TutorialsController < ApplicationController
       m.destroy
     end
 
-    @tutorial.user_id = -1
-    @tutorial.hidden = true
-    @tutorial.save
+    @tutorial.destroy
 
     respond_to do |format|
       format.html { redirect_to tutorials_url }

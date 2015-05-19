@@ -8,7 +8,6 @@
  * You're free to add application-wide styles to this file and they'll appear at the top of the
  * compiled file, but it's generally better to create a new file per style scope.
  *
- *  require jquery-ui
  *= require better_colorpicker
  *= require better_datetimepicker
  *= require font-awesome
@@ -24,8 +23,13 @@ $navbar-default-color: white;
 $navbar-default-link-color: white;
 $navbar-default-link-hover-color: #DDDDDD;
 $table-bg-accent: #E8E8E8;
+
 @import "bootstrap-sprockets";
 @import "bootstrap";
+
+.alert {
+  margin-bottom: 0px;
+}
 
 body {
   background-color: #ddd;
@@ -60,6 +64,42 @@ body {
   cursor: pointer;
 }
 
+#content-partial{
+  .summernote-controls{
+    text-align: right;
+    margin-top: 1em;
+  }
+  overflow:hidden !important;
+  iframe{
+    width: 100%;
+    height: 390px;
+  }
+}
+
+#content-viewer {
+  max-height: 400px;
+  overflow: auto;
+  word-wrap: break-word;
+  img{
+    width: 100%;
+    height: auto;
+  }
+  #add-content-image{
+    img{
+      height: 250px !important;
+      width: 250px !important;
+    }
+  }
+}
+
+.circle-img {
+  height: 30px;
+  width: 30px;
+  border-radius: 15px;
+  -webkit-border-radius: 15px;
+  -moz-border-radius: 15px;
+}
+
 .create-button {
   margin-bottom: 2ex;
 }
@@ -68,9 +108,35 @@ body {
   color: red;
 }
 
+.info_edit_link {
+  position: relative;
+  top: -2px;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.info_val {
+  font-weight: bold;
+}
+
+.flash {
+  transition: background-color .5s ease;
+}
+
 .footer {
-  text-align: center;
   font-size: smaller;
+
+  .category{
+    border-bottom: 1px solid gray;
+  }
+
+  .parts{
+    text-align: left;
+  }
+}
+
+.inline-block {
+  display: inline-block;
 }
 
 .item {
@@ -99,15 +165,18 @@ body {
     background-repeat: no-repeat;
     background-size: 100%;
     height: 120px;
+    border-bottom: 1px solid gray;
   }
 
   .item-image.item-photo-image {
     height: 200px;
-    margin: auto;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .item-title {
-    font-size: 1em;
+    font-size: 1.25em;
   }
 }
 
@@ -179,6 +248,14 @@ body {
     font-size: 0.9em;
   }
 
+  .navbtn {
+    .circle-img {
+      position: relative;
+      top: -5px;
+      vertical-align: top;
+    }
+  }
+
   .navbtn a {
     padding-top: 20px;
   }
@@ -193,10 +270,22 @@ body {
   }
 }
 
+.object-title {
+  font-size: 24px;
+}
+
 #outer {
   min-height: 100%;
   margin: 0px;
-  padding: 0px 0px 70px 0px;
+  padding: 0px 0px 10px 0px;
+}
+
+.placeholder{
+  font-size: 2em;
+  color: gray;
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .print {
@@ -208,6 +297,15 @@ body {
   box-shadow: 2px 3px 1px grey;
   padding: 2em;
   margin-bottom: 2ex;
+}
+
+.summary-text {
+  font-size: 16px;
+  color: #666;
+}
+
+#title-and-menu {
+  vertical-align: middle;
 }
 
 .truncate {
@@ -231,30 +329,4 @@ body {
 
 .word-wrap {
    word-wrap: break-word;
-}
-#content-partial{
-  .summernote-controls{
-    text-align: right;
-    margin-top: 1em;
-  }
-  overflow:hidden !important;
-  iframe{
-    width: 100%;
-    height: 390px;
-  }
-}
-#content-viewer {
-  max-height: 400px;
-  overflow: auto;
-  word-wrap: break-word;
-  img{
-    width: 100%;
-    height: auto;
-  }
-  #add-content-image{
-    img{
-      height: 250px !important;
-      width: 250px !important;
-    }
-  }
 }
